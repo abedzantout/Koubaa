@@ -14,30 +14,21 @@ jobs:
         distribution: 'temurin'
         cache: gradle
 
-    - name: Unzip Project Files
-      run: |
-        unzip project.zip
-        # البحث عن المجلد الذي يحتوي على build.gradle والانتقال إليه
-        TARGET_DIR=$(find . -name "build.gradle" -not -path "*/app/*" -exec dirname {} \;)
-        echo "Project directory found at: $TARGET_DIR"
-        echo "TARGET_PATH=$TARGET_DIR" >> $GITHUB_ENV
-
     - name: Grant execute permission for gradlew
       run: |
-        cd ${{ env.TARGET_PATH }}
+        # في حال عدم وجود ملف الجرادل الرئيسي سيتم توليده تلقائياً
         if [ ! -f gradlew ]; then
           gradle wrapper
         fi
         chmod +x gradlew
 
     - name: Build with Gradle
-      run: |
-        cd ${{ env.TARGET_PATH }}
-        ./gradlew assembleDebug
+      run: ./gradlew assembleDebug
 
     - name: Upload APK
       uses: actions/upload-artifact@v3
       with:
         name: KobaaTV-APK
-        path: "**/build/outputs/apk/debug/*.apk"
+        path: app/build/outputs/apk/debug/*.apk
+
 
