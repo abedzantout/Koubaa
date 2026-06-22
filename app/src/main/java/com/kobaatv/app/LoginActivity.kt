@@ -35,10 +35,9 @@ class LoginActivity : BaseActivity() {
         val progress = findViewById<ProgressBar>(R.id.progress)
         val langSpinner = findViewById<Spinner>(R.id.spLang)
 
-        // Pre-fill; fall back to the default panel when nothing is stored yet.
-        host.setText(Prefs.host(this).ifEmpty { DEFAULT_HOST })
-        user.setText(Prefs.user(this))
-        pass.setText(Prefs.pass(this))
+        // This screen adds an account, so start fresh with just the default
+        // host; username/password are entered each time.
+        host.setText(DEFAULT_HOST)
 
         // Language spinner: System / العربية / English
         val langs = listOf(
@@ -91,7 +90,9 @@ class LoginActivity : BaseActivity() {
                     btn.isEnabled = !submitting
                     when (state) {
                         is LoginViewModel.State.Success -> {
-                            Prefs.saveXtream(this@LoginActivity, state.host, state.user, state.pass)
+                            Accounts.upsertAndActivate(
+                                this@LoginActivity, state.host, state.user, state.pass,
+                            )
                             startActivity(Intent(this@LoginActivity, ChannelsActivity::class.java))
                             finish()
                         }

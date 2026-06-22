@@ -49,13 +49,19 @@ class XtreamClient(
         }
     }
 
-    /** Returns user_info auth=1 on success. */
-    fun login(): JSONObject {
+    /** Parses user_info on success; throws on a bad response or auth failure. */
+    fun login(): AccountInfo {
         val body = get(api())
         val json = JSONObject(body)
         val info = json.optJSONObject("user_info") ?: error("Bad response")
         if (info.optInt("auth", 0) != 1) error("auth failed")
-        return info
+        // exp_date is a Unix-seconds string, or null/"null" for unlimited accounts.
+        val expRaw = info.optString("exp_date", "")
+        return AccountInfo(
+            expiryEpochSeconds = expRaw.toLongOrNull(),
+            activeConnections = info.optInt("active_cons", 0),
+            maxConnections = info.optInt("max_connections", 0),
+        )
     }
 
     fun liveCategories(): List<Category> {
@@ -94,6 +100,13 @@ class XtreamClient(
             .addPathSegment(lastSegment)
             .build()
             .toString()
+
+    /** Subset of Xtream user_info shown in the UI and used by failover. */
+    data class AccountInfo(
+        val expiryEpochSeconds: Long?,
+        val activeConnections: Int,
+        val maxConnections: Int,
+    )
 
     data class Category(val id: String, val name: String)
     data class Channel(val streamId: Int, val name: String, val logo: String, val categoryId: String)

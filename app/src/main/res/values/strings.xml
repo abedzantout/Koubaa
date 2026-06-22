@@ -20,4 +20,15 @@
     <string name="status_online">Connected</string>
     <string name="status_offline">Disconnected</string>
     <string name="status_unknown">Checking…</string>
+    <string name="accounts_title">Accounts</string>
+    <string name="accounts_add">Add account</string>
+    <string name="accounts_remove">Remove</string>
+    <string name="accounts_active">ACTIVE</string>
+    <string name="accounts_empty">No accounts yet</string>
+    <string name="accounts_remove_confirm">Remove this account?</string>
+    <string name="account_expires">Expires %1$s</string>
+    <string name="account_expires_never">No expiry</string>
+    <string name="account_connections">%1$d / %2$d connected</string>
+    <string name="account_checking">Checking…</string>
+    <string name="account_unreachable">Unreachable</string>
 </resources>

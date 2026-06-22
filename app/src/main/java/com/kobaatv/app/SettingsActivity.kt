@@ -1,7 +1,9 @@
 package com.kobaatv.app
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.ArrayAdapter
+import android.widget.Button
 import android.widget.Spinner
 import android.widget.Toast
 import android.view.View
@@ -11,6 +13,10 @@ class SettingsActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
         title = getString(R.string.settings_title)
+
+        findViewById<Button>(R.id.btnAccounts).setOnClickListener {
+            startActivity(Intent(this, AccountsActivity::class.java))
+        }
 
         val langSpinner = findViewById<Spinner>(R.id.spLang)
         val langs = listOf(

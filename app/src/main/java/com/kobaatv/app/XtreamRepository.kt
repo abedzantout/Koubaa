@@ -17,9 +17,8 @@ class XtreamRepository(
 ) {
     private val client = XtreamClient(host, username, password)
 
-    suspend fun login(): Result<Unit> = runOnIo {
+    suspend fun login(): Result<XtreamClient.AccountInfo> = runOnIo {
         client.login()
-        Unit
     }
 
     suspend fun liveStreams(categoryId: String? = null): Result<List<XtreamClient.Channel>> = runOnIo {
