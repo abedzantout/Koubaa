@@ -34,5 +34,14 @@ class ChannelsViewModel(
         }
     }
 
+    /**
+     * Marks an emitted Error as handled by collapsing to an empty Loaded state,
+     * so re-collecting the flow (e.g. after a rotation) does not replay the
+     * error and show the toast again.
+     */
+    fun consumeError() {
+        if (_state.value is State.Error) _state.value = State.Loaded(emptyList())
+    }
+
     fun hlsUrl(streamId: Int): String = repository.hlsUrl(streamId)
 }

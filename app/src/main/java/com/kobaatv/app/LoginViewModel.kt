@@ -20,6 +20,8 @@ class LoginViewModel : ViewModel() {
     val state: StateFlow<State> = _state.asStateFlow()
 
     fun login(host: String, user: String, pass: String) {
+        // Ignore re-taps while a login is already in flight.
+        if (_state.value is State.Submitting) return
         _state.value = State.Submitting
         viewModelScope.launch {
             XtreamRepository(host, user, pass).login()

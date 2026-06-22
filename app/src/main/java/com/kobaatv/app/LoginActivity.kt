@@ -74,7 +74,12 @@ class LoginActivity : BaseActivity() {
                 Toast.makeText(this, R.string.err_fill_all, Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            val normalized = if (h.startsWith("http")) h else "http://$h"
+            // Match an actual scheme, not just hosts that happen to start with
+            // "http" (e.g. "httpstream.example.tv"), which would otherwise be
+            // left scheme-less and fail to parse.
+            val hasScheme = h.startsWith("http://", ignoreCase = true) ||
+                h.startsWith("https://", ignoreCase = true)
+            val normalized = if (hasScheme) h else "http://$h"
             viewModel.login(normalized, u, p)
         }
 

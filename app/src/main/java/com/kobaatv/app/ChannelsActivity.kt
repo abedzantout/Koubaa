@@ -22,6 +22,15 @@ class ChannelsActivity : BaseActivity() {
     private lateinit var progress: ProgressBar
     private lateinit var empty: TextView
 
+    // Created once and reused so the scroll position survives a state re-emission
+    // (e.g. returning from the player); only its data is swapped out.
+    private val adapter = ChannelAdapter { ch ->
+        val intent = Intent(this, PlayerActivity::class.java)
+        intent.putExtra(PlayerActivity.EXTRA_URL, viewModel.hlsUrl(ch.streamId))
+        intent.putExtra(PlayerActivity.EXTRA_TITLE, ch.name)
+        startActivity(intent)
+    }
+
     private val viewModel: ChannelsViewModel by viewModels { ChannelsViewModelFactory(this) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -33,6 +42,7 @@ class ChannelsActivity : BaseActivity() {
         progress = findViewById(R.id.progress)
         empty = findViewById(R.id.tvEmpty)
         rv.layoutManager = LinearLayoutManager(this)
+        rv.adapter = adapter
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -50,25 +60,27 @@ class ChannelsActivity : BaseActivity() {
             is ChannelsViewModel.State.Loaded -> {
                 progress.visibility = View.GONE
                 empty.visibility = if (state.channels.isEmpty()) View.VISIBLE else View.GONE
-                rv.adapter = ChannelAdapter(state.channels) { ch ->
-                    val intent = Intent(this, PlayerActivity::class.java)
-                    intent.putExtra(PlayerActivity.EXTRA_URL, viewModel.hlsUrl(ch.streamId))
-                    intent.putExtra(PlayerActivity.EXTRA_TITLE, ch.name)
-                    startActivity(intent)
-                }
+                adapter.submitList(state.channels)
             }
             is ChannelsViewModel.State.Error -> {
                 progress.visibility = View.GONE
                 empty.visibility = View.VISIBLE
                 Toast.makeText(this, state.message, Toast.LENGTH_LONG).show()
+                viewModel.consumeError()
             }
         }
     }
 
     private class ChannelAdapter(
-        val items: List<XtreamClient.Channel>,
         val onClick: (XtreamClient.Channel) -> Unit,
     ) : RecyclerView.Adapter<ChannelAdapter.VH>() {
+
+        private var items: List<XtreamClient.Channel> = emptyList()
+
+        fun submitList(newItems: List<XtreamClient.Channel>) {
+            items = newItems
+            notifyDataSetChanged()
+        }
 
         class VH(v: View) : RecyclerView.ViewHolder(v) {
             val name: TextView = v.findViewById(R.id.tvName)

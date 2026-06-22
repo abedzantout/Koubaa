@@ -87,17 +87,20 @@ class PlayerActivity : BaseActivity() {
     }
 
     private fun showQualityDialog() {
-        if (qualities.isEmpty()) return
-        // First entry is "Auto"; the rest map 1:1 to `qualities` by index.
+        // Snapshot the current qualities so a later onTracksChanged that mutates
+        // the field cannot desync the displayed rows from the click handler.
+        val snapshot = qualities
+        if (snapshot.isEmpty()) return
+        // First entry is "Auto"; the rest map 1:1 to `snapshot` by index.
         val items = buildList {
             add(getString(R.string.quality_auto))
-            qualities.forEach { q ->
+            snapshot.forEachIndexed { i, q ->
                 val f = q.format
                 add(
                     when {
                         f.height > 0 -> "${f.height}p"
                         f.bitrate > 0 -> "${f.bitrate / 1000} kbps"
-                        else -> getString(R.string.quality_auto)
+                        else -> "Track ${i + 1}"
                     },
                 )
             }
@@ -110,7 +113,7 @@ class PlayerActivity : BaseActivity() {
                     // Auto: clear overrides for video
                     params.clearOverridesOfType(C.TRACK_TYPE_VIDEO)
                 } else {
-                    val q = qualities[which - 1]
+                    val q = snapshot[which - 1]
                     params.setOverrideForType(
                         TrackSelectionOverride(q.group.mediaTrackGroup, q.trackIndex),
                     )
