@@ -1,10 +1,11 @@
 package com.kobaatv.app
 
+import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONArray
 import org.json.JSONObject
-import java.util.concurrent.TimeUnit
 
 /**
  * Minimal Xtream Codes API client.
@@ -12,23 +13,35 @@ import java.util.concurrent.TimeUnit
  * Host format: http(s)://domain:port (no trailing slash)
  * Stream URL format (Live, HLS):   {host}/live/{user}/{pass}/{stream_id}.m3u8
  * Stream URL format (Live, TS):    {host}/live/{user}/{pass}/{stream_id}.ts
+ *
+ * All username/password/category values are passed through HttpUrl, which
+ * percent-encodes them, so credentials containing @, &, +, spaces, etc. are
+ * sent correctly instead of breaking or altering the request.
  */
 class XtreamClient(
     private val host: String,
     private val username: String,
     private val password: String,
+    private val http: OkHttpClient = Network.client,
 ) {
-    private val http = OkHttpClient.Builder()
-        .connectTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(20, TimeUnit.SECONDS)
-        .build()
+    // Parsed lazily and tolerantly: an empty or malformed host surfaces as a
+    // caught exception in the request flow (as before) rather than crashing at
+    // construction time.
+    private val baseUrl: HttpUrl
+        get() = host.toHttpUrlOrNull() ?: error("Invalid host: $host")
 
-    private fun api(action: String? = null, extra: String = ""): String {
-        val base = "$host/player_api.php?username=$username&password=$password"
-        return if (action == null) base else "$base&action=$action$extra"
-    }
+    private fun api(action: String? = null, params: Map<String, String> = emptyMap()): HttpUrl =
+        baseUrl.newBuilder()
+            .addPathSegment("player_api.php")
+            .addQueryParameter("username", username)
+            .addQueryParameter("password", password)
+            .apply {
+                if (action != null) addQueryParameter("action", action)
+                params.forEach { (k, v) -> addQueryParameter(k, v) }
+            }
+            .build()
 
-    private fun get(url: String): String {
+    private fun get(url: HttpUrl): String {
         val req = Request.Builder().url(url).build()
         http.newCall(req).execute().use { resp ->
             if (!resp.isSuccessful) error("HTTP ${resp.code}")
@@ -54,8 +67,8 @@ class XtreamClient(
     }
 
     fun liveStreams(categoryId: String? = null): List<Channel> {
-        val extra = if (categoryId.isNullOrEmpty()) "" else "&category_id=$categoryId"
-        val arr = JSONArray(get(api("get_live_streams", extra)))
+        val params = if (categoryId.isNullOrEmpty()) emptyMap() else mapOf("category_id" to categoryId)
+        val arr = JSONArray(get(api("get_live_streams", params)))
         return (0 until arr.length()).map {
             val o = arr.getJSONObject(it)
             Channel(
@@ -68,10 +81,19 @@ class XtreamClient(
     }
 
     fun hlsUrl(streamId: Int): String =
-        "$host/live/$username/$password/$streamId.m3u8"
+        liveUrl("$streamId.m3u8")
 
     fun tsUrl(streamId: Int): String =
-        "$host/live/$username/$password/$streamId.ts"
+        liveUrl("$streamId.ts")
+
+    private fun liveUrl(lastSegment: String): String =
+        baseUrl.newBuilder()
+            .addPathSegment("live")
+            .addPathSegment(username)
+            .addPathSegment(password)
+            .addPathSegment(lastSegment)
+            .build()
+            .toString()
 
     data class Category(val id: String, val name: String)
     data class Channel(val streamId: Int, val name: String, val logo: String, val categoryId: String)

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Excludes the Xtream credential store from cloud backup and device-to-device
+  transfer. Defense in depth on top of android:allowBackup="false".
+  Applies on Android 12 (API 31) and above.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="sharedpref" path="kobaa_prefs.xml" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="sharedpref" path="kobaa_prefs.xml" />
+    </device-transfer>
+</data-extraction-rules>
