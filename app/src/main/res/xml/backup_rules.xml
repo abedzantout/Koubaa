@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Excludes the Xtream credential store from auto backup on Android 11
+  (API 30) and below. Defense in depth on top of android:allowBackup="false".
+-->
+<full-backup-content>
+    <exclude domain="sharedpref" path="kobaa_prefs.xml" />
+</full-backup-content>
