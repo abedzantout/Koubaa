@@ -77,6 +77,36 @@ class FailoverTest {
         assertEquals(listOf(c, a, b), Failover.orderedCandidates(all, activeId = "c"))
     }
 
+    // orderedCandidates also backs Accounts.active(), so cover its edges.
+
+    @Test
+    fun orderedCandidates_empty_returnsEmpty() {
+        assertEquals(emptyList<Account>(), Failover.orderedCandidates(emptyList(), activeId = "a"))
+    }
+
+    @Test
+    fun orderedCandidates_nullActive_keepsListOrder() {
+        assertEquals(all, Failover.orderedCandidates(all, activeId = null))
+    }
+
+    @Test
+    fun orderedCandidates_staleActiveId_keepsListOrder() {
+        assertEquals(all, Failover.orderedCandidates(all, activeId = "removed"))
+    }
+
+    @Test
+    fun orderedCandidates_doesNotDuplicateActive() {
+        val result = Failover.orderedCandidates(all, activeId = "b")
+        assertEquals(listOf(b, a, c), result)
+        assertEquals(all.size, result.size) // active not duplicated
+    }
+
+    @Test
+    fun orderedCandidates_singleAccount() {
+        assertEquals(listOf(a), Failover.orderedCandidates(listOf(a), activeId = "a"))
+        assertEquals(listOf(a), Failover.orderedCandidates(listOf(a), activeId = null))
+    }
+
     // --- stall recovery ladder ---
 
     @Test

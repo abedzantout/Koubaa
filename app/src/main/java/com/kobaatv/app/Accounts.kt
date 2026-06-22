@@ -82,11 +82,9 @@ object Accounts {
      * The account to connect with: the last one that worked, falling back to the
      * first in the list. Null when no accounts are configured.
      */
-    fun active(ctx: Context): Account? {
-        val accounts = list(ctx)
-        val lastGood = lastGoodId(ctx)
-        return accounts.firstOrNull { it.id == lastGood } ?: accounts.firstOrNull()
-    }
+    fun active(ctx: Context): Account? =
+        // Same "last-good first, else first" ordering the failover engine uses.
+        Failover.orderedCandidates(list(ctx), lastGoodId(ctx)).firstOrNull()
 
     private fun parse(raw: String): List<Account> {
         val arr = JSONArray(raw)

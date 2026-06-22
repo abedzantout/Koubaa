@@ -48,4 +48,24 @@ class XtreamClientUrlTest {
         val client = XtreamClient("http://1.2.3.4:25461", "u", "p")
         assertTrue(client.hlsUrl(99).startsWith("http://1.2.3.4:25461/live/"))
     }
+
+    @Test
+    fun hlsUrl_httpsSchemePreserved() {
+        // Non-default https port so it survives (HttpUrl elides :443).
+        val client = XtreamClient("https://example.com:8443", "u", "p")
+        assertEquals("https://example.com:8443/live/u/p/5.m3u8", client.hlsUrl(5))
+    }
+
+    @Test
+    fun url_hostWithTrailingSlash_doesNotDoubleSlash() {
+        // HttpUrl normalizes the host's trailing slash so the live path is clean.
+        val client = XtreamClient("http://example.com:8080/", "u", "p")
+        assertEquals("http://example.com:8080/live/u/p/3.m3u8", client.hlsUrl(3))
+    }
+
+    @Test
+    fun tsUrl_specialCharsEncoded() {
+        val client = XtreamClient("http://example.com:8080", "a b", "p/w")
+        assertEquals("http://example.com:8080/live/a%20b/p%2Fw/9.ts", client.tsUrl(9))
+    }
 }
