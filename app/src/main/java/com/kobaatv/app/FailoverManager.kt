@@ -30,11 +30,15 @@ class FailoverManager(
     /**
      * Finds a working account, trying the last-good one first. Stops without
      * cycling when there is no validated internet.
+     *
+     * @param excludeId an account to skip entirely — used by the player watchdog
+     *   to switch away from a stalling account whose login still succeeds.
      */
-    suspend fun connect(): Outcome {
+    suspend fun connect(excludeId: String? = null): Outcome {
         val accounts = Accounts.list(appContext)
         val activeId = Accounts.active(appContext)?.id
-        val tried = mutableSetOf<String>()
+        // Seeding `tried` with the excluded id makes Failover.next skip it.
+        val tried = mutableSetOf<String>().apply { excludeId?.let { add(it) } }
 
         while (true) {
             when (val decision = Failover.next(accounts, activeId, tried, hasValidatedInternet())) {

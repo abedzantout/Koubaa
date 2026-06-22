@@ -47,6 +47,30 @@ object Failover {
         return if (nextAccount != null) Decision.Try(nextAccount) else Decision.AllFailed
     }
 
+    /** What the player watchdog should do when a stream stalls. */
+    enum class StallAction { RETRY_SAME, SWITCH_ACCOUNT, GIVE_UP }
+
+    /**
+     * Decides how to recover a stalled stream, independent of ExoPlayer so it can
+     * be unit-tested. Retries the same stream up to [maxRetries] times; then, if
+     * another account exists that has not yet been tried this stall episode,
+     * switches to it; otherwise gives up.
+     *
+     * @param retriesDone how many same-stream retries have already happened.
+     * @param accountsAvailable total configured accounts.
+     * @param accountsTriedThisEpisode accounts already attempted for this stall.
+     */
+    fun stallAction(
+        retriesDone: Int,
+        accountsAvailable: Int,
+        accountsTriedThisEpisode: Int,
+        maxRetries: Int = 2,
+    ): StallAction = when {
+        retriesDone < maxRetries -> StallAction.RETRY_SAME
+        accountsTriedThisEpisode < accountsAvailable -> StallAction.SWITCH_ACCOUNT
+        else -> StallAction.GIVE_UP
+    }
+
     /** Active account first (if still present), then the others in list order. */
     fun orderedCandidates(accounts: List<Account>, activeId: String?): List<Account> {
         val active = accounts.firstOrNull { it.id == activeId }

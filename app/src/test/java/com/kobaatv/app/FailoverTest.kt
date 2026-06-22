@@ -76,4 +76,38 @@ class FailoverTest {
     fun orderedCandidates_activeFirstThenRest() {
         assertEquals(listOf(c, a, b), Failover.orderedCandidates(all, activeId = "c"))
     }
+
+    // --- stall recovery ladder ---
+
+    @Test
+    fun stall_retriesSameStreamUpToMax() {
+        assertEquals(Failover.StallAction.RETRY_SAME, Failover.stallAction(0, accountsAvailable = 3, accountsTriedThisEpisode = 1))
+        assertEquals(Failover.StallAction.RETRY_SAME, Failover.stallAction(1, accountsAvailable = 3, accountsTriedThisEpisode = 1))
+    }
+
+    @Test
+    fun stall_afterMaxRetries_switchesAccountIfAnotherIsUntried() {
+        // retriesDone == maxRetries(2): move on from retrying.
+        assertEquals(
+            Failover.StallAction.SWITCH_ACCOUNT,
+            Failover.stallAction(2, accountsAvailable = 3, accountsTriedThisEpisode = 1),
+        )
+    }
+
+    @Test
+    fun stall_allAccountsTriedThisEpisode_givesUp() {
+        // Every account already attempted this episode -> stop, don't loop.
+        assertEquals(
+            Failover.StallAction.GIVE_UP,
+            Failover.stallAction(2, accountsAvailable = 3, accountsTriedThisEpisode = 3),
+        )
+    }
+
+    @Test
+    fun stall_singleAccount_collapsesToRetryThenGiveUp() {
+        // One account: retry twice, then give up (no other account to switch to).
+        assertEquals(Failover.StallAction.RETRY_SAME, Failover.stallAction(0, accountsAvailable = 1, accountsTriedThisEpisode = 1))
+        assertEquals(Failover.StallAction.RETRY_SAME, Failover.stallAction(1, accountsAvailable = 1, accountsTriedThisEpisode = 1))
+        assertEquals(Failover.StallAction.GIVE_UP, Failover.stallAction(2, accountsAvailable = 1, accountsTriedThisEpisode = 1))
+    }
 }
