@@ -17,4 +17,7 @@
     <string name="lang_system">System default</string>
     <string name="lang_changed">Language updated</string>
     <string name="settings_title">Settings</string>
+    <string name="status_online">Connected</string>
+    <string name="status_offline">Disconnected</string>
+    <string name="status_unknown">Checking…</string>
 </resources>

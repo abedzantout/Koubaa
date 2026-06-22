@@ -17,4 +17,7 @@
     <string name="lang_system">إعداد النظام</string>
     <string name="lang_changed">تم تغيير اللغة</string>
     <string name="settings_title">الإعدادات</string>
+    <string name="status_online">متصل</string>
+    <string name="status_offline">غير متصل</string>
+    <string name="status_unknown">جارٍ التحقق…</string>
 </resources>
