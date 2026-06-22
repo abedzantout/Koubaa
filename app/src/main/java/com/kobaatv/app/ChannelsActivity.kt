@@ -55,8 +55,8 @@ class ChannelsActivity : BaseActivity() {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch { viewModel.state.collect { render(it) } }
                 launch {
-                    viewModel.errors.collect { message ->
-                        Toast.makeText(this@ChannelsActivity, message, Toast.LENGTH_LONG).show()
+                    viewModel.events.collect { reason ->
+                        Toast.makeText(this@ChannelsActivity, messageFor(reason), Toast.LENGTH_LONG).show()
                     }
                 }
             }
@@ -89,6 +89,15 @@ class ChannelsActivity : BaseActivity() {
         statusDot.background?.mutate()?.setTint(color)
         tvStatus.setText(labelRes)
     }
+
+    private fun messageFor(reason: ChannelsViewModel.FailReason): String = getString(
+        when (reason) {
+            ChannelsViewModel.FailReason.NO_NETWORK -> R.string.fail_no_network
+            ChannelsViewModel.FailReason.ALL_FAILED -> R.string.fail_all_accounts
+            ChannelsViewModel.FailReason.NO_ACCOUNTS -> R.string.fail_no_accounts
+            ChannelsViewModel.FailReason.LOAD_ERROR -> R.string.fail_load_error
+        },
+    )
 
     private class ChannelAdapter(
         val onClick: (XtreamClient.Channel) -> Unit,

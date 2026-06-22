@@ -31,4 +31,9 @@
     <string name="account_connections">%1$d / %2$d متصل</string>
     <string name="account_checking">جارٍ التحقق…</string>
     <string name="account_unreachable">غير قابل للوصول</string>
+    <string name="fail_no_network">لا يوجد اتصال بالإنترنت</string>
+    <string name="fail_all_accounts">فشل الاتصال بجميع الحسابات</string>
+    <string name="fail_no_accounts">لم يتم إعداد أي حساب</string>
+    <string name="fail_load_error">تعذّر تحميل القنوات</string>
+    <string name="switched_account">تم التبديل إلى %1$s</string>
 </resources>

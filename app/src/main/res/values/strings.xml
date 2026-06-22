@@ -31,4 +31,9 @@
     <string name="account_connections">%1$d / %2$d connected</string>
     <string name="account_checking">Checking…</string>
     <string name="account_unreachable">Unreachable</string>
+    <string name="fail_no_network">No internet connection</string>
+    <string name="fail_all_accounts">All accounts failed to connect</string>
+    <string name="fail_no_accounts">No account configured</string>
+    <string name="fail_load_error">Could not load channels</string>
+    <string name="switched_account">Switched to %1$s</string>
 </resources>
