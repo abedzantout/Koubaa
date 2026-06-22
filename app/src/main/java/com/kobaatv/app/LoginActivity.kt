@@ -9,7 +9,7 @@ import android.widget.EditText
 import android.widget.ProgressBar
 import android.widget.Spinner
 import android.widget.Toast
-import kotlinx.coroutines.CoroutineScope
+import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -70,7 +70,7 @@ class LoginActivity : BaseActivity() {
             val normalized = if (h.startsWith("http")) h else "http://$h"
             progress.visibility = View.VISIBLE
             btn.isEnabled = false
-            CoroutineScope(Dispatchers.Main).launch {
+            lifecycleScope.launch {
                 val ok = try {
                     withContext(Dispatchers.IO) {
                         XtreamClient(normalized, u, p).login()

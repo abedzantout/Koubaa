@@ -10,7 +10,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import kotlinx.coroutines.CoroutineScope
+import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -39,7 +39,7 @@ class ChannelsActivity : BaseActivity() {
         progress.visibility = View.VISIBLE
         empty.visibility = View.GONE
         val client = XtreamClient(Prefs.host(this), Prefs.user(this), Prefs.pass(this))
-        CoroutineScope(Dispatchers.Main).launch {
+        lifecycleScope.launch {
             try {
                 channels = withContext(Dispatchers.IO) { client.liveStreams() }
                 rv.adapter = ChannelAdapter(channels) { ch ->
