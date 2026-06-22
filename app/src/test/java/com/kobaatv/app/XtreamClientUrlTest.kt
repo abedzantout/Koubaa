@@ -29,15 +29,18 @@ class XtreamClientUrlTest {
     }
 
     @Test
-    fun hlsUrl_specialCharsInCredentials_arePercentEncoded() {
-        val client = XtreamClient("http://example.com:8080", "a b", "p@ss+/&")
+    fun hlsUrl_pathReservedCharsInCredentials_arePercentEncoded() {
+        // Use chars that OkHttp's PATH_SEGMENT_ENCODE_SET actually encodes: a
+        // space and a '/'. '/' is the important one — left raw it would split
+        // the credential into extra path segments and change the route.
+        val client = XtreamClient("http://example.com:8080", "a b", "p/w")
         val url = client.hlsUrl(1)
 
-        // The raw reserved characters must not appear unencoded in the path.
-        assertTrue("space not encoded: $url", "a b" !in url)
-        assertTrue("plus not encoded: $url", url.contains("p%40ss") || url.contains("%40"))
-        // Space becomes %20 in a path segment (not +, which is query-only).
+        // Space -> %20, '/' -> %2F, so neither splits or alters the path.
         assertTrue("space should be %20: $url", url.contains("a%20b"))
+        assertTrue("slash should be %2F: $url", url.contains("p%2Fw"))
+        // The password must remain a single segment between user and stream id.
+        assertEquals("http://example.com:8080/live/a%20b/p%2Fw/1.m3u8", url)
     }
 
     @Test
