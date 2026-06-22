@@ -35,6 +35,11 @@ class PlayerActivity : BaseActivity() {
 
     private var videoTracks: Tracks.Group? = null
 
+    // The user's intended play/pause state, preserved across onPause/onResume so
+    // returning to the foreground does not override a manual pause. Starts true
+    // so the stream autoplays on first open.
+    private var playWhenReadyIntent = true
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_player)
@@ -98,7 +103,19 @@ class PlayerActivity : BaseActivity() {
             .show()
     }
 
-    override fun onPause() { super.onPause(); player.playWhenReady = false }
-    override fun onResume() { super.onResume(); player.playWhenReady = true }
+    override fun onPause() {
+        super.onPause()
+        // Capture the user's current play/pause intent before stopping playback
+        // for the background, so onResume can restore it instead of forcing play.
+        playWhenReadyIntent = player.playWhenReady
+        player.playWhenReady = false
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Resume only if the user had not manually paused before leaving.
+        player.playWhenReady = playWhenReadyIntent
+    }
+
     override fun onDestroy() { super.onDestroy(); player.release() }
 }
