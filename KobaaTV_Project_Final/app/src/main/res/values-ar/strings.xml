@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">كوبا تي في</string>
+    <string name="xtream_login">تسجيل الدخول عبر Xtream Codes</string>
+    <string name="hint_host">رابط السيرفر (http://host:port)</string>
+    <string name="hint_user">اسم المستخدم</string>
+    <string name="hint_pass">كلمة المرور</string>
+    <string name="btn_login">دخول</string>
+    <string name="err_fill_all">يرجى تعبئة جميع الحقول</string>
+    <string name="err_login">فشل تسجيل الدخول: %1$s</string>
+    <string name="channels_title">القنوات</string>
+    <string name="empty_channels">لا توجد قنوات</string>
+    <string name="quality_button">الجودة</string>
+    <string name="quality_title">اختر الجودة</string>
+    <string name="quality_auto">تلقائي</string>
+    <string name="language_label">اللغة</string>
+    <string name="lang_system">إعداد النظام</string>
+    <string name="lang_changed">تم تغيير اللغة</string>
+    <string name="settings_title">الإعدادات</string>
+</resources>

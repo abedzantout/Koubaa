@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Kobaa TV</string>
+    <string name="xtream_login">Xtream Codes Login</string>
+    <string name="hint_host">Server URL (http://host:port)</string>
+    <string name="hint_user">Username</string>
+    <string name="hint_pass">Password</string>
+    <string name="btn_login">Login</string>
+    <string name="err_fill_all">Please fill all fields</string>
+    <string name="err_login">Login failed: %1$s</string>
+    <string name="channels_title">Channels</string>
+    <string name="empty_channels">No channels found</string>
+    <string name="quality_button">Quality</string>
+    <string name="quality_title">Select quality</string>
+    <string name="quality_auto">Auto</string>
+    <string name="language_label">Language</string>
+    <string name="lang_system">System default</string>
+    <string name="lang_changed">Language updated</string>
+    <string name="settings_title">Settings</string>
+</resources>
