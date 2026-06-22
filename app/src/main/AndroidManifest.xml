@@ -7,6 +7,10 @@
     <uses-feature android:name="android.software.leanback" android:required="false" />
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
 
+    <!-- usesCleartextTraffic is permitted globally because users enter arbitrary
+         Xtream IPTV panels, which commonly serve over plain HTTP (e.g. :8080).
+         The host set is user-supplied and cannot be enumerated, so a host-scoped
+         network security config is not possible here. -->
     <application
         android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
