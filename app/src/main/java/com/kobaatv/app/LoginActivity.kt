@@ -93,7 +93,12 @@ class LoginActivity : BaseActivity() {
                             Accounts.upsertAndActivate(
                                 this@LoginActivity, state.host, state.user, state.pass,
                             )
-                            startActivity(Intent(this@LoginActivity, ChannelsActivity::class.java))
+                            // Return to Home (creating it on first run, or back to
+                            // the existing instance when adding an account).
+                            startActivity(
+                                Intent(this@LoginActivity, HomeActivity::class.java)
+                                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP),
+                            )
                             finish()
                         }
                         is LoginViewModel.State.Error -> {

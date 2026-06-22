@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Foreground focus highlight for D-pad navigation: a bright ring drawn only when
+  the view is focused, so the remote position is always visible. Layered over the
+  tile's own color via android:foreground, so it works for any tile color.
+-->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_focused="true">
+        <shape android:shape="rectangle">
+            <corners android:radius="14dp" />
+            <stroke android:width="3dp" android:color="@color/focus_ring" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <corners android:radius="14dp" />
+            <stroke android:width="0dp" android:color="@android:color/transparent" />
+        </shape>
+    </item>
+</selector>

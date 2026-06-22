@@ -7,4 +7,15 @@
     <color name="status_online">#2ECC71</color>
     <color name="status_offline">#E74C3C</color>
     <color name="status_unknown">#9AA7B5</color>
+
+    <!-- Home tile colors (match the QUBAA TV reference). -->
+    <color name="tile_live">#E0394B</color>
+    <color name="tile_filme">#1E9BF0</color>
+    <color name="tile_series">#7E57F2</color>
+    <color name="tile_favorites">#3FB36B</color>
+    <color name="tile_settings">#E0A030</color>
+    <color name="tile_account">#5C7186</color>
+
+    <!-- D-pad focus highlight. -->
+    <color name="focus_ring">#FFFFFF</color>
 </resources>

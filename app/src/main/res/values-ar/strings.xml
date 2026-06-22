@@ -36,4 +36,13 @@
     <string name="fail_no_accounts">لم يتم إعداد أي حساب</string>
     <string name="fail_load_error">تعذّر تحميل القنوات</string>
     <string name="switched_account">تم التبديل إلى %1$s</string>
+    <string name="home_subtitle">من إنتاج أحمد القبع</string>
+    <string name="home_live">المباشر</string>
+    <string name="home_filme">أفلام</string>
+    <string name="home_series">مسلسلات</string>
+    <string name="home_favorites">المفضلة</string>
+    <string name="home_add_account">إضافة حساب</string>
+    <string name="home_manage_accounts">إدارة الحسابات</string>
+    <string name="coming_soon">قريباً</string>
+    <string name="server_label">السيرفر: %1$s</string>
 </resources>

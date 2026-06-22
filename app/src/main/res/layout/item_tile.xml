@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  One home tile: a colored rounded square with an icon and label. Focusable so
+  the D-pad can land on it; tile_focus draws a ring when focused. Background
+  color and icon/label are set per tile in code.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/tileRoot"
+    android:layout_width="132dp"
+    android:layout_height="132dp"
+    android:layout_marginEnd="14dp"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:background="@drawable/tile_bg"
+    android:foreground="@drawable/tile_focus"
+    android:focusable="true"
+    android:clickable="true">
+
+    <ImageView
+        android:id="@+id/tileIcon"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginBottom="10dp"
+        android:contentDescription="@null"
+        android:visibility="gone"/>
+
+    <TextView
+        android:id="@+id/tileLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/text"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        android:gravity="center"/>
+</LinearLayout>

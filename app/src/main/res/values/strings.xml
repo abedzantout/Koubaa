@@ -36,4 +36,13 @@
     <string name="fail_no_accounts">No account configured</string>
     <string name="fail_load_error">Could not load channels</string>
     <string name="switched_account">Switched to %1$s</string>
+    <string name="home_subtitle">Product by Ahmad Al Kobaa</string>
+    <string name="home_live">Live</string>
+    <string name="home_filme">Filme</string>
+    <string name="home_series">Series</string>
+    <string name="home_favorites">Favorites</string>
+    <string name="home_add_account">Add Account</string>
+    <string name="home_manage_accounts">Manage Accounts</string>
+    <string name="coming_soon">Coming soon</string>
+    <string name="server_label">Server: %1$s</string>
 </resources>
