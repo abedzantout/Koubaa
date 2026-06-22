@@ -3,18 +3,24 @@ package com.kobaatv.app
 import android.app.AlertDialog
 import android.net.Uri
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.View
 import android.widget.Button
 import android.widget.TextView
+import android.widget.Toast
+import androidx.lifecycle.lifecycleScope
 import com.google.android.exoplayer2.C
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.Format
 import com.google.android.exoplayer2.MediaItem
+import com.google.android.exoplayer2.PlaybackException
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.Tracks
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
 import com.google.android.exoplayer2.trackselection.TrackSelectionOverride
 import com.google.android.exoplayer2.ui.StyledPlayerView
+import kotlinx.coroutines.launch
 
 /**
  * Player with a YouTube-style quality selector built on ExoPlayer's
@@ -25,14 +31,31 @@ import com.google.android.exoplayer2.ui.StyledPlayerView
 class PlayerActivity : BaseActivity() {
 
     companion object {
-        const val EXTRA_URL = "url"
         const val EXTRA_TITLE = "title"
+        const val EXTRA_STREAM_ID = "stream_id"
+
+        // Treat playback as stalled if it stays buffering this long.
+        private const val STALL_TIMEOUT_MS = 12_000L
+        // Resume must hold this long before the stall episode is considered over.
+        private const val RECOVERY_STABLE_MS = 5_000L
     }
 
     private lateinit var player: ExoPlayer
     private lateinit var trackSelector: DefaultTrackSelector
     private lateinit var playerView: StyledPlayerView
     private lateinit var btnQuality: Button
+
+    private val failover by lazy { FailoverManager(applicationContext) }
+    private val handler = Handler(Looper.getMainLooper())
+
+    private var streamId: Int = -1
+    private var currentAccountId: String? = null
+
+    // Stall-episode bookkeeping. Reset only after playback stays stable, so a
+    // late blip doesn't inherit a stale retry count.
+    private var retriesDone = 0
+    private val accountsTriedThisEpisode = mutableSetOf<String>()
+    private var recovering = false
 
     /** One selectable video quality: which group it lives in and its index there. */
     private data class VideoQuality(
@@ -56,7 +79,10 @@ class PlayerActivity : BaseActivity() {
         btnQuality = findViewById(R.id.btnQuality)
         val tvTitle = findViewById<TextView>(R.id.tvTitle)
 
-        val url = intent.getStringExtra(EXTRA_URL) ?: run { finish(); return }
+        streamId = intent.getIntExtra(EXTRA_STREAM_ID, -1)
+        val account = Accounts.active(this)
+        if (streamId < 0 || account == null) { finish(); return }
+        currentAccountId = account.id
         tvTitle.text = intent.getStringExtra(EXTRA_TITLE).orEmpty()
 
         trackSelector = DefaultTrackSelector(this)
@@ -77,13 +103,106 @@ class PlayerActivity : BaseActivity() {
                     }
                 btnQuality.visibility = if (qualities.size > 1) View.VISIBLE else View.GONE
             }
+
+            override fun onPlaybackStateChanged(state: Int) {
+                when (state) {
+                    Player.STATE_BUFFERING -> scheduleStallCheck()
+                    Player.STATE_READY -> onPlaybackHealthy()
+                    else -> {}
+                }
+            }
+
+            override fun onPlayerError(error: PlaybackException) {
+                // A hard error is an immediate stall.
+                cancelStallCheck()
+                recoverFromStall()
+            }
         })
 
+        play(repositoryFor(account).hlsUrl(streamId))
+        btnQuality.setOnClickListener { showQualityDialog() }
+    }
+
+    private fun repositoryFor(account: Account) =
+        XtreamRepository(account.host, account.username, account.password)
+
+    private fun play(url: String) {
         player.setMediaItem(MediaItem.fromUri(Uri.parse(url)))
         player.prepare()
         player.playWhenReady = true
+    }
 
-        btnQuality.setOnClickListener { showQualityDialog() }
+    // --- stall watchdog ---
+
+    private fun scheduleStallCheck() {
+        cancelStallCheck()
+        handler.postDelayed(stallRunnable, STALL_TIMEOUT_MS)
+    }
+
+    private fun cancelStallCheck() {
+        handler.removeCallbacks(stallRunnable)
+    }
+
+    private val stallRunnable = Runnable {
+        // Still buffering when the timer fires -> treat as a stall.
+        if (player.playbackState == Player.STATE_BUFFERING) recoverFromStall()
+    }
+
+    private fun onPlaybackHealthy() {
+        cancelStallCheck()
+        // Only end the stall episode once playback has held steady for a while,
+        // so a brief recovery between blips doesn't reset the retry count early.
+        handler.removeCallbacks(stableRunnable)
+        if (!recovering) return
+        handler.postDelayed(stableRunnable, RECOVERY_STABLE_MS)
+    }
+
+    private val stableRunnable = Runnable {
+        if (player.playbackState == Player.STATE_READY && player.isPlaying) {
+            retriesDone = 0
+            accountsTriedThisEpisode.clear()
+            recovering = false
+        }
+    }
+
+    private fun recoverFromStall() {
+        recovering = true
+        currentAccountId?.let { accountsTriedThisEpisode.add(it) }
+        val action = Failover.stallAction(
+            retriesDone = retriesDone,
+            accountsAvailable = Accounts.list(this).size,
+            accountsTriedThisEpisode = accountsTriedThisEpisode.size,
+        )
+        when (action) {
+            Failover.StallAction.RETRY_SAME -> {
+                retriesDone++
+                player.prepare()
+                player.playWhenReady = true
+            }
+            Failover.StallAction.SWITCH_ACCOUNT -> switchAccount()
+            Failover.StallAction.GIVE_UP -> {
+                Toast.makeText(this, R.string.fail_all_accounts, Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    private fun switchAccount() {
+        lifecycleScope.launch {
+            when (val outcome = failover.connect(excludeId = currentAccountId)) {
+                is FailoverManager.Outcome.Connected -> {
+                    currentAccountId = outcome.account.id
+                    accountsTriedThisEpisode.add(outcome.account.id)
+                    retriesDone = 0
+                    play(repositoryFor(outcome.account).hlsUrl(streamId))
+                    Toast.makeText(
+                        this@PlayerActivity,
+                        getString(R.string.switched_account, outcome.account.username),
+                        Toast.LENGTH_SHORT,
+                    ).show()
+                }
+                else -> Toast.makeText(this@PlayerActivity, R.string.fail_all_accounts, Toast.LENGTH_LONG).show()
+            }
+        }
     }
 
     private fun showQualityDialog() {
@@ -137,5 +256,12 @@ class PlayerActivity : BaseActivity() {
         player.playWhenReady = playWhenReadyIntent
     }
 
-    override fun onDestroy() { super.onDestroy(); player.release() }
+    override fun onDestroy() {
+        super.onDestroy()
+        // Drop any pending stall/recovery callbacks before releasing the player,
+        // so they can't fire against a released instance.
+        handler.removeCallbacks(stallRunnable)
+        handler.removeCallbacks(stableRunnable)
+        player.release()
+    }
 }

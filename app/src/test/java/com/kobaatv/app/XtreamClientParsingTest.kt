@@ -4,6 +4,7 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -36,8 +37,28 @@ class XtreamClientParsingTest {
     @Test
     fun login_authOne_succeeds() {
         server.enqueue(MockResponse().setBody("""{"user_info":{"auth":1}}"""))
+        // Should not throw; missing fields default sensibly.
         val info = client().login()
-        assertEquals(1, info.optInt("auth"))
+        assertEquals(0, info.activeConnections)
+    }
+
+    @Test
+    fun login_parsesExpiryAndConnections() {
+        server.enqueue(
+            MockResponse().setBody(
+                """{"user_info":{"auth":1,"exp_date":"1750000000","active_cons":"2","max_connections":"3"}}""",
+            ),
+        )
+        val info = client().login()
+        assertEquals(1750000000L, info.expiryEpochSeconds)
+        assertEquals(2, info.activeConnections)
+        assertEquals(3, info.maxConnections)
+    }
+
+    @Test
+    fun login_nullExpiry_isUnlimited() {
+        server.enqueue(MockResponse().setBody("""{"user_info":{"auth":1,"exp_date":null}}"""))
+        assertNull(client().login().expiryEpochSeconds)
     }
 
     @Test(expected = IllegalStateException::class)

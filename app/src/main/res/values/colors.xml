@@ -4,4 +4,7 @@
     <color name="text">#FFFFFF</color>
     <color name="muted">#9AA7B5</color>
     <color name="brand">#00AEEF</color>
+    <color name="status_online">#2ECC71</color>
+    <color name="status_offline">#E74C3C</color>
+    <color name="status_unknown">#9AA7B5</color>
 </resources>
