@@ -15,7 +15,6 @@ jobs:
         cache: gradle
 
     - name: Grant execute permission for gradlew
-      working-directory: KobaaTV_Project_Final
       run: |
         # في حال عدم وجود ملف الجرادل الرئيسي سيتم توليده تلقائياً
         if [ ! -f gradlew ]; then
@@ -24,13 +23,12 @@ jobs:
         chmod +x gradlew
 
     - name: Build with Gradle
-      working-directory: KobaaTV_Project_Final
       run: ./gradlew assembleDebug
 
     - name: Upload APK
       uses: actions/upload-artifact@v3
       with:
         name: KobaaTV-APK
-        path: KobaaTV_Project_Final/app/build/outputs/apk/debug/*.apk
+        path: app/build/outputs/apk/debug/*.apk
 
 
