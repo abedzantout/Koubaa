@@ -9,12 +9,15 @@ import android.widget.EditText
 import android.widget.ProgressBar
 import android.widget.Spinner
 import android.widget.Toast
+import androidx.activity.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.Dispatchers
+import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class LoginActivity : BaseActivity() {
+
+    private val viewModel: LoginViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -68,24 +71,31 @@ class LoginActivity : BaseActivity() {
                 return@setOnClickListener
             }
             val normalized = if (h.startsWith("http")) h else "http://$h"
-            progress.visibility = View.VISIBLE
-            btn.isEnabled = false
-            lifecycleScope.launch {
-                val ok = try {
-                    withContext(Dispatchers.IO) {
-                        XtreamClient(normalized, u, p).login()
+            viewModel.login(normalized, u, p)
+        }
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.state.collect { state ->
+                    val submitting = state is LoginViewModel.State.Submitting
+                    progress.visibility = if (submitting) View.VISIBLE else View.GONE
+                    btn.isEnabled = !submitting
+                    when (state) {
+                        is LoginViewModel.State.Success -> {
+                            Prefs.saveXtream(this@LoginActivity, state.host, state.user, state.pass)
+                            startActivity(Intent(this@LoginActivity, ChannelsActivity::class.java))
+                            finish()
+                        }
+                        is LoginViewModel.State.Error -> {
+                            Toast.makeText(
+                                this@LoginActivity,
+                                getString(R.string.err_login, state.message ?: ""),
+                                Toast.LENGTH_LONG,
+                            ).show()
+                            viewModel.clearError()
+                        }
+                        else -> Unit
                     }
-                    true
-                } catch (e: Exception) {
-                    Toast.makeText(this@LoginActivity, getString(R.string.err_login, e.message ?: ""), Toast.LENGTH_LONG).show()
-                    false
-                }
-                progress.visibility = View.GONE
-                btn.isEnabled = true
-                if (ok) {
-                    Prefs.saveXtream(this@LoginActivity, normalized, u, p)
-                    startActivity(Intent(this@LoginActivity, ChannelsActivity::class.java))
-                    finish()
                 }
             }
         }

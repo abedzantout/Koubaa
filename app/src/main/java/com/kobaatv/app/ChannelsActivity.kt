@@ -8,19 +8,21 @@ import android.view.ViewGroup
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class ChannelsActivity : BaseActivity() {
 
     private lateinit var rv: RecyclerView
     private lateinit var progress: ProgressBar
     private lateinit var empty: TextView
-    private var channels: List<XtreamClient.Channel> = emptyList()
+
+    private val viewModel: ChannelsViewModel by viewModels { ChannelsViewModelFactory(this) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -32,28 +34,33 @@ class ChannelsActivity : BaseActivity() {
         empty = findViewById(R.id.tvEmpty)
         rv.layoutManager = LinearLayoutManager(this)
 
-        load()
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.state.collect { render(it) }
+            }
+        }
     }
 
-    private fun load() {
-        progress.visibility = View.VISIBLE
-        empty.visibility = View.GONE
-        val client = XtreamClient(Prefs.host(this), Prefs.user(this), Prefs.pass(this))
-        lifecycleScope.launch {
-            try {
-                channels = withContext(Dispatchers.IO) { client.liveStreams() }
-                rv.adapter = ChannelAdapter(channels) { ch ->
-                    val intent = Intent(this@ChannelsActivity, PlayerActivity::class.java)
-                    intent.putExtra(PlayerActivity.EXTRA_URL, client.hlsUrl(ch.streamId))
+    private fun render(state: ChannelsViewModel.State) {
+        when (state) {
+            is ChannelsViewModel.State.Loading -> {
+                progress.visibility = View.VISIBLE
+                empty.visibility = View.GONE
+            }
+            is ChannelsViewModel.State.Loaded -> {
+                progress.visibility = View.GONE
+                empty.visibility = if (state.channels.isEmpty()) View.VISIBLE else View.GONE
+                rv.adapter = ChannelAdapter(state.channels) { ch ->
+                    val intent = Intent(this, PlayerActivity::class.java)
+                    intent.putExtra(PlayerActivity.EXTRA_URL, viewModel.hlsUrl(ch.streamId))
                     intent.putExtra(PlayerActivity.EXTRA_TITLE, ch.name)
                     startActivity(intent)
                 }
-                if (channels.isEmpty()) empty.visibility = View.VISIBLE
-            } catch (e: Exception) {
-                Toast.makeText(this@ChannelsActivity, e.message, Toast.LENGTH_LONG).show()
-                empty.visibility = View.VISIBLE
-            } finally {
+            }
+            is ChannelsViewModel.State.Error -> {
                 progress.visibility = View.GONE
+                empty.visibility = View.VISIBLE
+                Toast.makeText(this, state.message, Toast.LENGTH_LONG).show()
             }
         }
     }

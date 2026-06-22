@@ -6,7 +6,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONArray
 import org.json.JSONObject
-import java.util.concurrent.TimeUnit
 
 /**
  * Minimal Xtream Codes API client.
@@ -23,17 +22,13 @@ class XtreamClient(
     private val host: String,
     private val username: String,
     private val password: String,
+    private val http: OkHttpClient = Network.client,
 ) {
     // Parsed lazily and tolerantly: an empty or malformed host surfaces as a
     // caught exception in the request flow (as before) rather than crashing at
     // construction time.
     private val baseUrl: HttpUrl
         get() = host.toHttpUrlOrNull() ?: error("Invalid host: $host")
-
-    private val http = OkHttpClient.Builder()
-        .connectTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(20, TimeUnit.SECONDS)
-        .build()
 
     private fun api(action: String? = null, params: Map<String, String> = emptyMap()): HttpUrl =
         baseUrl.newBuilder()
