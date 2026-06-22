@@ -17,6 +17,10 @@ import kotlinx.coroutines.launch
 
 class LoginActivity : BaseActivity() {
 
+    companion object {
+        private const val DEFAULT_HOST = "http://asmrasmr.live:8080"
+    }
+
     private val viewModel: LoginViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -31,8 +35,8 @@ class LoginActivity : BaseActivity() {
         val progress = findViewById<ProgressBar>(R.id.progress)
         val langSpinner = findViewById<Spinner>(R.id.spLang)
 
-        // Pre-fill
-        host.setText(Prefs.host(this))
+        // Pre-fill; fall back to the default panel when nothing is stored yet.
+        host.setText(Prefs.host(this).ifEmpty { DEFAULT_HOST })
         user.setText(Prefs.user(this))
         pass.setText(Prefs.pass(this))
 
