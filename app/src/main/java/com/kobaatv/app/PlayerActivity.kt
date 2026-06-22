@@ -8,11 +8,12 @@ import android.widget.Button
 import android.widget.TextView
 import com.google.android.exoplayer2.C
 import com.google.android.exoplayer2.ExoPlayer
+import com.google.android.exoplayer2.Format
 import com.google.android.exoplayer2.MediaItem
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.Tracks
-import com.google.android.exoplayer2.source.TrackGroup
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
+import com.google.android.exoplayer2.trackselection.TrackSelectionOverride
 import com.google.android.exoplayer2.ui.StyledPlayerView
 
 /**
@@ -33,7 +34,14 @@ class PlayerActivity : BaseActivity() {
     private lateinit var playerView: StyledPlayerView
     private lateinit var btnQuality: Button
 
-    private var videoTracks: Tracks.Group? = null
+    /** One selectable video quality: which group it lives in and its index there. */
+    private data class VideoQuality(
+        val group: Tracks.Group,
+        val trackIndex: Int,
+        val format: Format,
+    )
+
+    private var qualities: List<VideoQuality> = emptyList()
 
     // The user's intended play/pause state, preserved across onPause/onResume so
     // returning to the foreground does not override a manual pause. Starts true
@@ -57,8 +65,17 @@ class PlayerActivity : BaseActivity() {
 
         player.addListener(object : Player.Listener {
             override fun onTracksChanged(tracks: Tracks) {
-                videoTracks = tracks.groups.firstOrNull { it.type == C.TRACK_TYPE_VIDEO }
-                btnQuality.visibility = if ((videoTracks?.length ?: 0) > 1) View.VISIBLE else View.GONE
+                // HLS quality variants may be spread across several video track
+                // groups (not just one), so collect every supported video format
+                // across all of them instead of looking at only the first group.
+                qualities = tracks.groups
+                    .filter { it.type == C.TRACK_TYPE_VIDEO }
+                    .flatMap { group ->
+                        (0 until group.length)
+                            .filter { group.isTrackSupported(it) }
+                            .map { VideoQuality(group, it, group.getTrackFormat(it)) }
+                    }
+                btnQuality.visibility = if (qualities.size > 1) View.VISIBLE else View.GONE
             }
         })
 
@@ -70,18 +87,20 @@ class PlayerActivity : BaseActivity() {
     }
 
     private fun showQualityDialog() {
-        val group = videoTracks ?: return
-        val items = mutableListOf(getString(R.string.quality_auto))
-        val heights = mutableListOf<Int>()
-        for (i in 0 until group.length) {
-            val f = group.getTrackFormat(i)
-            val label = when {
-                f.height > 0 -> "${f.height}p"
-                f.bitrate > 0 -> "${f.bitrate / 1000} kbps"
-                else -> "Track $i"
+        if (qualities.isEmpty()) return
+        // First entry is "Auto"; the rest map 1:1 to `qualities` by index.
+        val items = buildList {
+            add(getString(R.string.quality_auto))
+            qualities.forEach { q ->
+                val f = q.format
+                add(
+                    when {
+                        f.height > 0 -> "${f.height}p"
+                        f.bitrate > 0 -> "${f.bitrate / 1000} kbps"
+                        else -> getString(R.string.quality_auto)
+                    },
+                )
             }
-            items.add(label)
-            heights.add(i)
         }
         AlertDialog.Builder(this)
             .setTitle(R.string.quality_title)
@@ -91,11 +110,9 @@ class PlayerActivity : BaseActivity() {
                     // Auto: clear overrides for video
                     params.clearOverridesOfType(C.TRACK_TYPE_VIDEO)
                 } else {
-                    val trackIndex = heights[which - 1]
+                    val q = qualities[which - 1]
                     params.setOverrideForType(
-                        com.google.android.exoplayer2.trackselection.TrackSelectionOverride(
-                            group.mediaTrackGroup, trackIndex
-                        )
+                        TrackSelectionOverride(q.group.mediaTrackGroup, q.trackIndex),
                     )
                 }
                 trackSelector.setParameters(params)
