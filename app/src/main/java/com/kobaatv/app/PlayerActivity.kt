@@ -31,7 +31,6 @@ import kotlinx.coroutines.launch
 class PlayerActivity : BaseActivity() {
 
     companion object {
-        const val EXTRA_URL = "url"
         const val EXTRA_TITLE = "title"
         const val EXTRA_STREAM_ID = "stream_id"
 
@@ -80,9 +79,10 @@ class PlayerActivity : BaseActivity() {
         btnQuality = findViewById(R.id.btnQuality)
         val tvTitle = findViewById<TextView>(R.id.tvTitle)
 
-        val url = intent.getStringExtra(EXTRA_URL) ?: run { finish(); return }
         streamId = intent.getIntExtra(EXTRA_STREAM_ID, -1)
-        currentAccountId = Accounts.active(this)?.id
+        val account = Accounts.active(this)
+        if (streamId < 0 || account == null) { finish(); return }
+        currentAccountId = account.id
         tvTitle.text = intent.getStringExtra(EXTRA_TITLE).orEmpty()
 
         trackSelector = DefaultTrackSelector(this)
@@ -119,9 +119,12 @@ class PlayerActivity : BaseActivity() {
             }
         })
 
-        play(url)
+        play(repositoryFor(account).hlsUrl(streamId))
         btnQuality.setOnClickListener { showQualityDialog() }
     }
+
+    private fun repositoryFor(account: Account) =
+        XtreamRepository(account.host, account.username, account.password)
 
     private fun play(url: String) {
         player.setMediaItem(MediaItem.fromUri(Uri.parse(url)))
@@ -184,20 +187,13 @@ class PlayerActivity : BaseActivity() {
     }
 
     private fun switchAccount() {
-        if (streamId < 0) {
-            Toast.makeText(this, R.string.fail_all_accounts, Toast.LENGTH_LONG).show()
-            return
-        }
         lifecycleScope.launch {
             when (val outcome = failover.connect(excludeId = currentAccountId)) {
                 is FailoverManager.Outcome.Connected -> {
                     currentAccountId = outcome.account.id
                     accountsTriedThisEpisode.add(outcome.account.id)
                     retriesDone = 0
-                    val repo = XtreamRepository(
-                        outcome.account.host, outcome.account.username, outcome.account.password,
-                    )
-                    play(repo.hlsUrl(streamId))
+                    play(repositoryFor(outcome.account).hlsUrl(streamId))
                     Toast.makeText(
                         this@PlayerActivity,
                         getString(R.string.switched_account, outcome.account.username),

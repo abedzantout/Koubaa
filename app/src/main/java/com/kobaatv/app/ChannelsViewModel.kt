@@ -37,9 +37,6 @@ class ChannelsViewModel(
     private val _events = MutableSharedFlow<FailReason>(extraBufferCapacity = 1)
     val events: SharedFlow<FailReason> = _events.asSharedFlow()
 
-    // Repository for the account currently connected, used for stream URLs.
-    private var repository: XtreamRepository? = null
-
     init {
         load()
     }
@@ -50,8 +47,7 @@ class ChannelsViewModel(
         viewModelScope.launch {
             when (val outcome = failover.connect()) {
                 is FailoverManager.Outcome.Connected -> {
-                    val repo = repositoryFor(outcome.account).also { repository = it }
-                    repo.liveStreams()
+                    repositoryFor(outcome.account).liveStreams()
                         .onSuccess { _state.value = State.Loaded(it) }
                         .onFailure { fail(FailReason.LOAD_ERROR) }
                 }
@@ -66,6 +62,4 @@ class ChannelsViewModel(
         _state.value = State.Error(reason)
         _events.tryEmit(reason)
     }
-
-    fun hlsUrl(streamId: Int): String = repository?.hlsUrl(streamId).orEmpty()
 }

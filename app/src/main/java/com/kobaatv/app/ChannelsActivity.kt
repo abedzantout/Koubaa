@@ -31,7 +31,6 @@ class ChannelsActivity : BaseActivity() {
     // (e.g. returning from the player); only its data is swapped out.
     private val adapter = ChannelAdapter { ch ->
         val intent = Intent(this, PlayerActivity::class.java)
-        intent.putExtra(PlayerActivity.EXTRA_URL, viewModel.hlsUrl(ch.streamId))
         intent.putExtra(PlayerActivity.EXTRA_STREAM_ID, ch.streamId)
         intent.putExtra(PlayerActivity.EXTRA_TITLE, ch.name)
         startActivity(intent)
